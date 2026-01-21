@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formador de equipos</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 15px; background: #f4f4f4; }
+    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    
+    /* Campo de Fútbol Vertical */
+    .field { background: #2e7d32; border: 3px solid white; height: 650px; display: flex; flex-direction: column; border-radius: 10px; margin-bottom: 15px; }
+    .half { flex: 1; border: 1px dashed rgba(255,255,255,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; position: relative; }
+    .team-label { color: white; font-size: 24px; font-weight: bold; margin-bottom: 10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+    .player-label { background: white; padding: 5px 12px; border-radius: 4px; font-weight: bold; font-size: 0.9em; width: 140px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    
+    /* UI */
+    .hidden { display: none; }
+    .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; margin: 5px 2px; }
+    .btn-add { background: #4caf50; color: white; font-size: 20px; }
+    .btn-main { background: #1976d2; color: white; width: 100%; }
+    .btn-back { background: #607d8b; color: white; width: 100%; }
+    .btn-reset { background: #d32f2f; color: white; }
+    
+    /* DB Editor */
+    .db-item { border-bottom: 1px solid #eee; padding: 10px 0; }
+    .db-row { display: flex; justify-content: space-between; align-items: center; }
+    .btn-icon { padding: 8px; font-size: 18px; line-height: 1; border-radius: 4px; border: none; cursor: pointer; color: white; }
+    .btn-edit { background: #ffa000; }
+    .btn-delete { background: #d32f2f; }
+    .btn-check { background: #4caf50; }
+    .btn-x { background: #d32f2f; }
+    
+    .edit-submenu { background: #f9f9f9; padding: 15px; margin-top: 10px; border-radius: 5px; border-left: 4px solid #ffa000; }
+    .edit-submenu input, .edit-submenu select { width: 90%; padding: 8px; margin-bottom: 10px; }
+    .list-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
+    .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="main-screen">
+  <h1>Formador de equipos</h1>
+  <div class="card">
+    <button id="openFormBtn" class="btn btn-add" onclick="openForm()">+</button>
+    <button class="btn btn-main" style="width:auto; float:right" onclick="openDbEditor()">✏️ BD</button>
+    
+    <div id="add-form" class="hidden">
+      <h3>Nuevo Jugador</h3>
+      <input type="text" id="name" placeholder="Nombre completo" style="width:95%; padding:8px;"><br><br>
+      <select id="p1"></select> <select id="p2"></select> <select id="p3"></select><br><br>
+      <input type="number" id="pts" placeholder="Puntos (1-9)" min="1" max="9" style="width:95%; padding:8px;"><br>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn btn-add" style="flex:1" onclick="saveNewPlayer()">Aceptar</button>
+        <button class="btn btn-reset" style="flex:1" onclick="closeForm()">Cancelar</button>
+      </div>
+      <hr>
+    </div>
+
+    <h3>Convocatoria</h3>
+    <div id="player-list"></div>
+    <button id="splitBtn" class="btn btn-main hidden" onclick="splitTeams()">REPARTIR EQUIPOS</button>
+    <button id="resetBtn" class="btn btn-reset hidden" onclick="resetTeams()">Resetear</button>
+  </div>
+</div>
+
+<div id="field-screen" class="hidden">
+  <div class="card">
+    <h2>Equipos Formados</h2>
+    <div class="field">
+      <div class="half" id="teamWhiteField"></div>
+      <div class="half" id="teamPetosField"></div>
+    </div>
+    <button class="btn btn-back" onclick="goBackToSelection()">⬅ Volver a Selección</button>
+    <div style="display:flex;">
+        <button class="btn btn-main" style="flex:1; background:#ffa000" onclick="openManualEditor()">Editar Manual</button>
+        <button class="btn btn-reset" style="flex:1" onclick="resetTeams()">Resetear Todo</button>
+    </div>
+  </div>
+</div>
+
+<div id="manual-editor" class="hidden card">
+  <h2>Mover Jugadores</h2>
+  <div class="editor-grid">
+    <div><h4>Blanco</h4><div id="editWhite"></div></div>
+    <div><h4>Petos</h4><div id="editPetos"></div></div>
+  </div>
+  <div style="display:flex; gap:10px; margin-top:15px;">
+    <button class="btn btn-add" style="flex:1" onclick="saveManualEdit()">Aceptar</button>
+    <button class="btn btn-reset" style="flex:1" onclick="cancelManualEdit()">Cancelar</button>
+  </div>
+</div>
+
+<div id="db-editor" class="hidden card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>Base de Datos</h2>
+    <button class="btn btn-back" style="width:auto" onclick="closeDbEditor()">Cerrar</button>
+  </div>
+  <div id="db-list"></div>
+</div>
+
+<script>
+let db = JSON.parse(localStorage.getItem('players') || '[]');
+let selectedIds = new Set();
+let teamWhite = [], teamPetos = [];
+let backupTeams = null;
+const positions = ["", "Portero", "Defensa", "Central", "Delantero"];
+
+function setupSelects(prefix) {
+  let html = '';
+  positions.forEach(pos => html += `<option value="${pos}">${pos || '---'}</option>`);
+  [1,2,3].forEach(n => { document.getElementById(prefix + n).innerHTML = html; });
+}
+setupSelects('p');
+
+function openForm() { document.getElementById('add-form').classList.remove('hidden'); document.getElementById('openFormBtn').classList.add('hidden'); }
+function closeForm() { document.getElementById('add-form').classList.add('hidden'); document.getElementById('openFormBtn').classList.remove('hidden'); }
+
+function saveNewPlayer() {
+  const name = document.getElementById('name').value.trim();
+  const pts = parseInt(document.getElementById('pts').value);
+  const pos = [document.getElementById('p1').value, document.getElementById('p2').value, document.getElementById('p3').value];
+  if(!name || isNaN(pts)) return alert("Nombre y Puntos obligatorios");
+  db.push({ id: crypto.randomUUID(), name, pos, points: pts });
+  saveAndRefresh();
+  closeForm();
+}
+
+function saveAndRefresh() { localStorage.setItem('players', JSON.stringify(db)); renderPlayers(); }
+
+function renderPlayers() {
+  const container = document.getElementById('player-list');
+  container.innerHTML = '';
+  db.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    const isChecked = selectedIds.has(p.id) ? 'checked' : '';
+    div.innerHTML = `<input type="checkbox" ${isChecked} onchange="toggleSelect('${p.id}', this.checked)"> ${p.name}`;
+    container.appendChild(div);
+  });
+  updateButtons();
+}
+
+function toggleSelect(id, checked) { checked ? selectedIds.add(id) : selectedIds.delete(id); updateButtons(); }
+function updateButtons() {
+  document.getElementById('splitBtn').classList.toggle('hidden', selectedIds.size < 10);
+  document.getElementById('resetBtn').classList.toggle('hidden', teamWhite.length === 0 && selectedIds.size === 0);
+}
+
+function splitTeams() {
+  const players = db.filter(p => selectedIds.has(p.id));
+  let bestScore = Infinity;
+  let bestSplit = null;
+
+  for(let i=0; i<1000; i++) {
+    let tW = [], tP = [], pW = 0, pP = 0;
+    const shuffled = [...players].sort(() => Math.random() - 0.5);
+    shuffled.forEach(p => {
+      if (pW <= pP) { tW.push(p); pW += p.points; } else { tP.push(p); pP += p.points; }
+    });
+    const diff = Math.abs(pW - pP);
+    if (diff / Math.max(pW, pP) <= 0.20) {
+      let penalty = 0;
+      ["Portero", "Defensa", "Central", "Delantero"].forEach(pos => {
+        if (!tW.some(pl => pl.pos.includes(pos))) penalty += 5;
+        if (!tP.some(pl => pl.pos.includes(pos))) penalty += 5;
+      });
+      if (diff + penalty < bestScore) { bestScore = diff + penalty; bestSplit = { w: tW, p: tP }; }
+    }
+  }
+  if (bestSplit) { teamWhite = bestSplit.w; teamPetos = bestSplit.p; showField(); } 
+  else { alert("No se logró el equilibrio. Prueba de nuevo."); }
+}
+
+function showField() {
+  document.getElementById('main-screen').classList.add('hidden');
+  document.getElementById('field-screen').classList.remove('hidden');
+  
+  const draw = (team, id, label) => {
+    const el = document.getElementById(id);
+    el.innerHTML = `<div class="team-label">${label}</div>`;
+    team.forEach(p => el.innerHTML += `<div class="player-label">${p.name}</div>`);
+  };
+  
+  draw(teamWhite, 'teamWhiteField', 'BLANCO');
+  draw(teamPetos, 'teamPetosField', 'PETOS');
+}
+
+function goBackToSelection() { document.getElementById('field-screen').classList.add('hidden'); document.getElementById('main-screen').classList.remove('hidden'); renderPlayers(); }
+
+function openDbEditor() {
+  document.getElementById('main-screen').classList.add('hidden');
+  document.getElementById('db-editor').classList.remove('hidden');
+  renderDbList();
+}
+
+function renderDbList() {
+  const container = document.getElementById('db-list');
+  container.innerHTML = '';
+  db.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'db-item';
+    item.innerHTML = `
+      <div class="db-row">
+        <span>${p.name}</span>
+        <div class="db-actions">
+          <button class="btn-icon btn-edit" onclick="showEditSubmenu(${i})">✏️</button>
+          <button class="btn-icon btn-delete" onclick="deletePlayer(${i})">🗑️</button>
+        </div>
+      </div>
+      <div id="edit-area-${i}" class="hidden edit-submenu">
+        <input type="text" id="edit-name-${i}" value="${p.name}">
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+          <select id="ep1-${i}"></select><select id="ep2-${i}"></select><select id="ep3-${i}"></select>
+        </div>
+        <input type="number" id="edit-pts-${i}" value="${p.points}" min="1" max="9">
+        <div style="display:flex; gap:10px;">
+          <button class="btn-icon btn-check" style="flex:1" onclick="saveEdit(${i})">✅</button>
+          <button class="btn-icon btn-x" style="flex:1" onclick="renderDbList()">❌</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function showEditSubmenu(i) {
+  renderDbList(); 
+  document.getElementById(`edit-area-${i}`).classList.remove('hidden');
+  let html = '';
+  positions.forEach(pos => html += `<option value="${pos}">${pos || '---'}</option>`);
+  [1,2,3].forEach(n => {
+    const s = document.getElementById(`ep${n}-${i}`);
+    s.innerHTML = html;
+    s.value = db[i].pos[n-1] || "";
+  });
+}
+
+function saveEdit(i) {
+  const name = document.getElementById(`edit-name-${i}`).value.trim();
+  const pts = parseInt(document.getElementById(`edit-pts-${i}`).value);
+  const pos = [document.getElementById(`ep1-${i}`).value, document.getElementById(`ep2-${i}`).value, document.getElementById(`ep3-${i}`).value];
+  if(!name || isNaN(pts)) return alert("Datos obligatorios");
+  db[i] = { ...db[i], name, points: pts, pos };
+  localStorage.setItem('players', JSON.stringify(db));
+  renderDbList();
+}
+
+function deletePlayer(i) { if(confirm(`¿Borrar a ${db[i].name}?`)) { db.splice(i,1); localStorage.setItem('players', JSON.stringify(db)); renderDbList(); } }
+function closeDbEditor() { document.getElementById('db-editor').classList.add('hidden'); document.getElementById('main-screen').classList.remove('hidden'); renderPlayers(); }
+
+function openManualEditor() {
+  document.getElementById('field-screen').classList.add('hidden');
+  document.getElementById('manual-editor').classList.remove('hidden');
+  backupTeams = { w: [...teamWhite], p: [...teamPetos] };
+  renderManualEditor();
+}
+function renderManualEditor() {
+  const draw = (team, id, side) => {
+    const el = document.getElementById(id); el.innerHTML = '';
+    team.forEach((p, idx) => el.innerHTML += `<div style="padding:5px; border-bottom:1px solid #eee">${p.name} <button class="btn" style="padding:2px 10px" onclick="swap('${side}',${idx})">${side==='w'?'→':'←'}</button></div>`);
+  };
+  draw(teamWhite, 'editWhite', 'w'); draw(teamPetos, 'editPetos', 'p');
+}
+function swap(side, i) { if(side==='w') teamPetos.push(teamWhite.splice(i,1)[0]); else teamWhite.push(teamPetos.splice(i,1)[0]); renderManualEditor(); }
+function saveManualEdit() { document.getElementById('manual-editor').classList.add('hidden'); showField(); }
+function cancelManualEdit() { teamWhite = backupTeams.w; teamPetos = backupTeams.p; document.getElementById('manual-editor').classList.add('hidden'); showField(); }
+
+function resetTeams() { if(confirm("¿Resetear selección y equipos?")) { teamWhite=[]; teamPetos=[]; selectedIds.clear(); goBackToSelection(); } }
+
+renderPlayers();
+</script>
+</body>
+</html>
