@@ -5,50 +5,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Formador de equipos</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 10px; background: #f4f4f4; }
-    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    :root {
+      --grass-light: #2e7d32;
+      --grass-dark: #276b2b;
+      --line-color: rgba(255, 255, 255, 0.6);
+    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 10px; background: #eceff1; }
+    .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
     
-    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    #counter { font-weight: bold; background: #1976d2; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.85em; }
+    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    #counter { font-weight: bold; background: #1976d2; color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
     /* Lista en 2 Columnas */
-    #player-list { 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; 
-      gap: 8px; 
-      margin-top: 10px;
-    }
-    .list-item { 
-      padding: 10px 5px; 
-      border-bottom: 1px solid #eee; 
-      display: flex; 
-      align-items: center; 
-      font-size: 0.85em; 
-      background: #fafafa;
-      border-radius: 4px;
-    }
-    .list-item input { margin-right: 8px; scale: 1.2; }
-    .list-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #player-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .list-item { padding: 10px; border: 1px solid #e0e0e0; display: flex; align-items: center; font-size: 0.85em; background: #fff; border-radius: 6px; transition: 0.2s; }
+    .list-item:active { background: #f0f0f0; }
+    .list-item input { margin-right: 10px; transform: scale(1.2); }
 
-    /* Campo de Fútbol */
-    .field { background: #2e7d32; border: 3px solid white; min-height: 600px; height: auto; display: flex; flex-direction: column; border-radius: 10px; margin-bottom: 15px; padding: 10px 0; }
-    .half { flex: 1; border: 1px dashed rgba(255,255,255,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px 0; }
-    .team-label { color: white; font-size: 24px; font-weight: bold; margin-bottom: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
-    .player-label { background: white; padding: 5px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em; width: 140px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    /* CAMPO PROFESIONAL */
+    .field { 
+      background: repeating-linear-gradient(var(--grass-light), var(--grass-light) 40px, var(--grass-dark) 40px, var(--grass-dark) 80px);
+      border: 4px solid white; 
+      min-height: 700px; 
+      display: flex; 
+      flex-direction: column; 
+      border-radius: 12px; 
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.2);
+    }
+    /* Líneas del campo */
+    .field::before {
+      content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: var(--line-color);
+    }
+    .field::after {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 100px; height: 100px; 
+      border: 2px solid var(--line-color); border-radius: 50%; transform: translate(-50%, -50%);
+    }
+
+    .half { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; padding: 20px 0; z-index: 1; }
     
+    .team-label { 
+      color: white; font-size: 26px; font-weight: 900; letter-spacing: 2px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.6); margin-bottom: 10px;
+    }
+
+    /* Tarjeta de Jugador Pro */
+    .player-badge {
+      display: flex; align-items: center; background: rgba(255,255,255,0.95);
+      padding: 4px 8px; border-radius: 4px; width: 160px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 5px solid #1976d2;
+    }
+    .pos-tag { 
+      font-size: 0.65em; font-weight: bold; background: #333; color: white; 
+      padding: 2px 4px; border-radius: 3px; margin-right: 8px; min-width: 25px; text-align: center;
+    }
+    .player-name { font-size: 0.9em; font-weight: bold; color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Botones y UI */
     .hidden { display: none; }
-    .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; margin: 5px 2px; }
-    .btn-add { background: #4caf50; color: white; font-size: 20px; }
+    .btn { padding: 12px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.3s; }
+    .btn-add { background: #4caf50; color: white; font-size: 20px; padding: 8px 16px; }
     .btn-main { background: #1976d2; color: white; width: 100%; }
-    .btn-back { background: #607d8b; color: white; width: 100%; }
+    .btn-back { background: #546e7a; color: white; width: 100%; margin-top: 10px; }
     .btn-reset { background: #d32f2f; color: white; }
-    
-    .db-item { border-bottom: 1px solid #eee; padding: 10px 0; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .db-item { border-bottom: 1px solid #eee; padding: 12px 0; }
     .db-row { display: flex; justify-content: space-between; align-items: center; }
-    .btn-icon { padding: 8px; font-size: 18px; line-height: 1; border-radius: 4px; border: none; cursor: pointer; color: white; }
-    .btn-edit { background: #ffa000; }
-    .btn-delete { background: #d32f2f; }
-    .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   </style>
 </head>
 <body>
@@ -64,11 +88,15 @@
     
     <div id="add-form" class="hidden">
       <h3>Nuevo Jugador</h3>
-      <input type="text" id="name" placeholder="Nombre completo" style="width:95%; padding:8px;"><br><br>
-      <select id="p1"></select> <select id="p2"></select> <select id="p3"></select><br><br>
-      <input type="number" id="pts" placeholder="Puntos (1-9)" min="1" max="9" style="width:95%; padding:8px;"><br>
+      <input type="text" id="name" placeholder="Nombre completo" style="width:95%; padding:10px; border-radius:6px; border:1px solid #ccc;"><br><br>
+      <div style="display:flex; gap:5px;">
+        <select id="p1" style="flex:1; padding:8px;"></select>
+        <select id="p2" style="flex:1; padding:8px;"></select>
+        <select id="p3" style="flex:1; padding:8px;"></select>
+      </div><br>
+      <input type="number" id="pts" placeholder="Puntos (1-9)" min="1" max="9" style="width:95%; padding:10px; border-radius:6px; border:1px solid #ccc;"><br>
       <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="btn btn-add" style="flex:1" onclick="saveNewPlayer()">Aceptar</button>
+        <button class="btn btn-add" style="flex:1" onclick="saveNewPlayer()">Guardar</button>
         <button class="btn btn-reset" style="flex:1" onclick="closeForm()">Cancelar</button>
       </div>
       <hr>
@@ -76,34 +104,36 @@
 
     <h3>Convocatoria</h3>
     <div id="player-list"></div>
-    <button id="splitBtn" class="btn btn-main hidden" onclick="splitTeams()">REPARTIR EQUIPOS</button>
-    <button id="resetBtn" class="btn btn-reset hidden" onclick="resetTeams()">Resetear</button>
+    <div style="margin-top:20px;">
+      <button id="splitBtn" class="btn btn-main hidden" onclick="splitTeams()">REPARTIR EQUIPOS</button>
+      <button id="resetBtn" class="btn btn-reset hidden" onclick="resetTeams()">Resetear</button>
+    </div>
   </div>
 </div>
 
 <div id="field-screen" class="hidden">
   <div class="card">
-    <h2>Equipos Formados</h2>
+    <h2 style="margin-top:0">Equipos Formados</h2>
     <div class="field" id="mainField">
       <div class="half" id="teamWhiteField"></div>
       <div class="half" id="teamPetosField"></div>
     </div>
     <button class="btn btn-back" onclick="goBackToSelection()">⬅ Volver a Selección</button>
-    <div style="display:flex;">
-        <button class="btn btn-main" style="flex:1; background:#ffa000" onclick="openManualEditor()">Editar Manual</button>
-        <button class="btn btn-reset" style="flex:1" onclick="resetTeams()">Resetear Todo</button>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn btn-main" style="flex:1; background:#ffa000" onclick="openManualEditor()">Mover Jugadores</button>
+        <button class="btn btn-reset" style="flex:1" onclick="resetTeams()">Borrar Todo</button>
     </div>
   </div>
 </div>
 
 <div id="manual-editor" class="hidden card">
   <h2>Mover Jugadores</h2>
-  <div class="editor-grid">
-    <div><h4>Blanco</h4><div id="editWhite"></div></div>
-    <div><h4>Petos</h4><div id="editPetos"></div></div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+    <div><h4 style="color:#1976d2">Blanco</h4><div id="editWhite"></div></div>
+    <div><h4 style="color:#d32f2f">Petos</h4><div id="editPetos"></div></div>
   </div>
   <div style="display:flex; gap:10px; margin-top:15px;">
-    <button class="btn btn-add" style="flex:1" onclick="saveManualEdit()">Aceptar</button>
+    <button class="btn btn-add" style="flex:1" onclick="saveManualEdit()">Aplicar Cambios</button>
     <button class="btn btn-reset" style="flex:1" onclick="cancelManualEdit()">Cancelar</button>
   </div>
 </div>
@@ -111,7 +141,7 @@
 <div id="db-editor" class="hidden card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h2>Base de Datos</h2>
-    <button class="btn btn-back" style="width:auto" onclick="closeDbEditor()">Cerrar</button>
+    <button class="btn btn-back" style="width:auto; margin:0" onclick="closeDbEditor()">Cerrar</button>
   </div>
   <div id="db-list"></div>
 </div>
@@ -123,6 +153,7 @@ let teamWhite = [], teamPetos = [];
 let backupTeams = null;
 const roles = ["Portero", "Defensa", "Central", "Delantero"];
 const posPriority = { "Portero": 1, "Defensa": 2, "Central": 3, "Delantero": 4, "": 5 };
+const posAbbr = { "Portero": "POR", "Defensa": "DEF", "Central": "CEN", "Delantero": "DEL", "": "---" };
 
 function setupSelects(prefix) {
   let html = '<option value="">---</option>';
@@ -140,16 +171,15 @@ function saveNewPlayer() {
   const pos = [document.getElementById('p1').value, document.getElementById('p2').value, document.getElementById('p3').value];
   if(!name || isNaN(pts)) return alert("Nombre y Puntos obligatorios");
   db.push({ id: crypto.randomUUID(), name, pos, points: pts });
-  saveAndRefresh();
+  localStorage.setItem('players', JSON.stringify(db));
+  renderPlayers();
   closeForm();
 }
-
-function saveAndRefresh() { localStorage.setItem('players', JSON.stringify(db)); renderPlayers(); }
 
 function renderPlayers() {
   const container = document.getElementById('player-list');
   container.innerHTML = '';
-  db.forEach(p => {
+  db.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
     const div = document.createElement('div');
     div.className = 'list-item';
     const isChecked = selectedIds.has(p.id) ? 'checked' : '';
@@ -175,7 +205,7 @@ function splitTeams() {
   let bestScore = Infinity;
   let bestSplit = null;
 
-  for(let i=0; i<1500; i++) {
+  for(let i=0; i<2000; i++) {
     let tW = [], tP = [], pW = 0, pP = 0;
     const shuffled = [...players].sort(() => Math.random() - 0.5);
     shuffled.forEach(p => {
@@ -188,7 +218,7 @@ function splitTeams() {
     }
   }
   if (bestSplit) { teamWhite = bestSplit.w; teamPetos = bestSplit.p; showField(); }
-  else { alert("Ajusta la selección para equilibrar."); }
+  else { alert("No se encontró equilibrio. Intenta ajustar la selección."); }
 }
 
 function calculatePenalty(tW, tP) {
@@ -196,7 +226,7 @@ function calculatePenalty(tW, tP) {
   roles.forEach(role => {
     const hasW = tW.some(p => p.pos.includes(role));
     const hasP = tP.some(p => p.pos.includes(role));
-    if (!hasW) penalty += 40; if (!hasP) penalty += 40;
+    if (!hasW) penalty += 50; if (!hasP) penalty += 50;
   });
   return penalty;
 }
@@ -204,13 +234,21 @@ function calculatePenalty(tW, tP) {
 function showField() {
   document.getElementById('main-screen').classList.add('hidden');
   document.getElementById('field-screen').classList.remove('hidden');
+  
   teamWhite.sort((a, b) => (posPriority[a.pos[0]] || 5) - (posPriority[b.pos[0]] || 5));
   teamPetos.sort((a, b) => (posPriority[b.pos[0]] || 5) - (posPriority[a.pos[0]] || 5));
 
   const draw = (team, id, label) => {
     const el = document.getElementById(id);
     el.innerHTML = `<div class="team-label">${label}</div>`;
-    team.forEach(p => el.innerHTML += `<div class="player-label">${p.name}</div>`);
+    team.forEach(p => {
+      const abbr = posAbbr[p.pos[0]] || "---";
+      el.innerHTML += `
+        <div class="player-badge">
+          <span class="pos-tag">${abbr}</span>
+          <span class="player-name">${p.name}</span>
+        </div>`;
+    });
   };
   draw(teamWhite, 'teamWhiteField', 'BLANCO');
   draw(teamPetos, 'teamPetosField', 'PETOS');
@@ -225,7 +263,7 @@ function renderDbList() {
   db.forEach((p, i) => {
     const item = document.createElement('div');
     item.className = 'db-item';
-    item.innerHTML = `<div class="db-row"><span>${p.name}</span><div class="db-actions"><button class="btn-icon btn-edit" onclick="showEditSubmenu(${i})">✏️</button><button class="btn-icon btn-delete" onclick="deletePlayer(${i})">🗑️</button></div></div><div id="edit-area-${i}" class="hidden" style="background:#f9f9f9; padding:10px; margin-top:5px; border-radius:5px;"><input type="text" id="edit-name-${i}" value="${p.name}" style="width:90%; padding:5px;"><br><br><select id="ep1-${i}"></select><select id="ep2-${i}"></select><select id="ep3-${i}"></select><br><br><input type="number" id="edit-pts-${i}" value="${p.points}" style="width:90%; padding:5px;"><br><br><button class="btn-icon" style="background:#4caf50" onclick="saveEdit(${i})">✅</button><button class="btn-icon" style="background:#d32f2f" onclick="renderDbList()">❌</button></div>`;
+    item.innerHTML = `<div class="db-row"><span>${p.name}</span><div class="db-actions"><button class="btn-icon" style="background:#ffa000; color:white; border-radius:4px; border:none; padding:5px 8px;" onclick="showEditSubmenu(${i})">✏️</button> <button class="btn-icon" style="background:#d32f2f; color:white; border-radius:4px; border:none; padding:5px 8px;" onclick="deletePlayer(${i})">🗑️</button></div></div><div id="edit-area-${i}" class="hidden" style="background:#f9f9f9; padding:15px; margin-top:5px; border-radius:8px;"><input type="text" id="edit-name-${i}" value="${p.name}" style="width:90%; padding:8px;"><br><br><div style="display:flex; gap:5px;"><select id="ep1-${i}"></select><select id="ep2-${i}"></select><select id="ep3-${i}"></select></div><br><input type="number" id="edit-pts-${i}" value="${p.points}" style="width:90%; padding:8px;"><br><br><button class="btn" style="background:#4caf50; color:white;" onclick="saveEdit(${i})">Guardar</button> <button class="btn" style="background:#555; color:white;" onclick="renderDbList()">Cerrar</button></div>`;
     container.appendChild(item);
   });
 }
@@ -250,24 +288,24 @@ function saveEdit(i) {
   renderDbList();
 }
 
-function deletePlayer(i) { if(confirm("¿Borrar?")) { db.splice(i,1); saveAndRefresh(); renderDbList(); } }
+function deletePlayer(i) { if(confirm("¿Borrar jugador definitivamente?")) { db.splice(i,1); localStorage.setItem('players', JSON.stringify(db)); renderDbList(); } }
 function closeDbEditor() { document.getElementById('db-editor').classList.add('hidden'); document.getElementById('main-screen').classList.remove('hidden'); renderPlayers(); }
 function openManualEditor() { document.getElementById('field-screen').classList.add('hidden'); document.getElementById('manual-editor').classList.remove('hidden'); backupTeams = { w: [...teamWhite], p: [...teamPetos] }; renderManualEditor(); }
+
 function renderManualEditor() {
   const draw = (team, id, side) => {
     const el = document.getElementById(id); el.innerHTML = '';
-    team.forEach((p, idx) => el.innerHTML += `<div style="padding:5px; border-bottom:1px solid #eee">${p.name} <button class="btn" style="padding:2px 10px" onclick="swap('${side}',${idx})">${side==='w'?'→':'←'}</button></div>`);
+    team.forEach((p, idx) => el.innerHTML += `<div style="padding:8px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">${p.name} <button class="btn" style="padding:4px 10px; font-size:12px;" onclick="swap('${side}',${idx})">${side==='w'?'→':'←'}</button></div>`);
   };
   draw(teamWhite, 'editWhite', 'w'); draw(teamPetos, 'editPetos', 'p');
 }
+
 function swap(side, i) { if(side==='w') teamPetos.push(teamWhite.splice(i,1)[0]); else teamWhite.push(teamPetos.splice(i,1)[0]); renderManualEditor(); }
 function saveManualEdit() { document.getElementById('manual-editor').classList.add('hidden'); showField(); }
 function cancelManualEdit() { teamWhite = backupTeams.w; teamPetos = backupTeams.p; document.getElementById('manual-editor').classList.add('hidden'); showField(); }
-function resetTeams() { if(confirm("¿Borrar todo?")) { teamWhite=[]; teamPetos=[]; selectedIds.clear(); goBackToSelection(); } }
+function resetTeams() { if(confirm("¿Resetear selección y equipos?")) { teamWhite=[]; teamPetos=[]; selectedIds.clear(); goBackToSelection(); } }
 
 renderPlayers();
 </script>
 </body>
-</html>
-
 </html>
