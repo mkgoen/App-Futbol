@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,6 +36,15 @@
     .pos-tag { font-size: 0.65em; font-weight: bold; background: #333; color: white; padding: 2px 4px; border-radius: 3px; margin-right: 8px; min-width: 25px; text-align: center; }
     .player-name { font-size: 0.9em; font-weight: bold; color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    /* Banner equipos activos */
+    #active-teams-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 8px;
+      padding: 10px 14px; margin-bottom: 12px;
+    }
+    #active-teams-banner span { font-size: 0.85em; color: #2e7d32; font-weight: bold; }
+    #active-teams-banner button { background: #2e7d32; color: white; border: none; border-radius: 6px; padding: 7px 14px; font-weight: bold; cursor: pointer; font-size: 0.85em; }
+
     /* UI */
     .hidden { display: none; }
     .btn { padding: 12px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.3s; }
@@ -57,6 +67,12 @@
       <button id="openFormBtn" class="btn btn-add" onclick="openForm()">+</button>
       <div id="counter">Seleccionados: 0</div>
       <button class="btn btn-main" style="width:auto" onclick="openDbEditor()">✏️ BD</button>
+    </div>
+
+    <!-- Banner equipos activos -->
+    <div id="active-teams-banner" class="hidden">
+      <span>⚽ Equipos formados</span>
+      <button onclick="showField()">Ver equipos →</button>
     </div>
     
     <div id="add-form" class="hidden">
@@ -156,9 +172,14 @@ function renderPlayers() {
 }
 
 function toggleSelect(id, checked) { checked ? selectedIds.add(id) : selectedIds.delete(id); updateUI(); }
+
 function updateUI() {
   document.getElementById('counter').innerText = `Seleccionados: ${selectedIds.size}`;
   document.getElementById('splitBtn').classList.toggle('hidden', selectedIds.size < 2);
+  // Mostrar banner solo si hay equipos formados
+  document.getElementById('active-teams-banner').classList.toggle('hidden', teamWhite.length === 0 && teamPetos.length === 0);
+  // Mostrar botón reset solo si hay equipos O selección
+  document.getElementById('resetBtn').classList.toggle('hidden', teamWhite.length === 0 && teamPetos.length === 0 && selectedIds.size === 0);
 }
 
 // LÓGICA CON COMPROBACIÓN NUMÉRICA "SIMPLE PERO EFECTIVA"
@@ -176,9 +197,7 @@ function splitTeams() {
       if (pW <= pP) { tW.push(p); pW += p.points; } else { tP.push(p); pP += p.points; }
     });
 
-    // LA CLAVE: Si es par y no hay el mismo número de jugadores, descartamos esta iteración
     if (isEven && tW.length !== tP.length) continue;
-    // Si es impar, solo aceptamos si la diferencia es de 1 jugador
     if (!isEven && Math.abs(tW.length - tP.length) !== 1) continue;
 
     const diff = Math.abs(pW - pP);
@@ -210,6 +229,7 @@ function calculatePenalty(tW, tP) {
 
 function showField() {
   document.getElementById('main-screen').classList.add('hidden');
+  document.getElementById('manual-editor').classList.add('hidden');
   document.getElementById('field-screen').classList.remove('hidden');
   teamWhite.sort((a,b) => (posPriority[a.pos[0]]||5) - (posPriority[b.pos[0]]||5));
   teamPetos.sort((a,b) => (posPriority[b.pos[0]]||5) - (posPriority[a.pos[0]]||5));
@@ -222,7 +242,13 @@ function showField() {
   draw(teamPetos, 'teamPetosField', 'PETOS');
 }
 
-function goBackToSelection() { document.getElementById('field-screen').classList.add('hidden'); document.getElementById('main-screen').classList.remove('hidden'); }
+// CAMBIO CLAVE: volver sin borrar equipos
+function goBackToSelection() {
+  document.getElementById('field-screen').classList.add('hidden');
+  document.getElementById('main-screen').classList.remove('hidden');
+  updateUI(); // refresca el banner
+}
+
 function openDbEditor() { document.getElementById('main-screen').classList.add('hidden'); document.getElementById('db-editor').classList.remove('hidden'); renderDbList(); }
 function closeDbEditor() { document.getElementById('db-editor').classList.add('hidden'); document.getElementById('main-screen').classList.remove('hidden'); renderPlayers(); }
 
