@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -83,7 +82,10 @@
         <select id="p2" style="flex:1; padding:8px;"></select>
         <select id="p3" style="flex:1; padding:8px;"></select>
       </div><br>
-      <input type="number" id="pts" placeholder="Puntos (1-9)" min="1" max="9" style="width:95%; padding:10px; border-radius:6px; border:1px solid #ccc;"><br>
+      <input type="number" id="pts" placeholder="Puntos (1-9)" min="1" max="9" style="width:95%; padding:10px; border-radius:6px; border:1px solid #ccc;"><br><br>
+      <label style="display:flex; align-items:center; gap:8px; font-size:0.9em; cursor:pointer;">
+        <input type="checkbox" id="isKid" style="transform:scale(1.3);"> 👦 Niño
+      </label>
       <div style="display:flex; gap:10px; margin-top:10px;">
         <button class="btn btn-add" style="flex:1" onclick="saveNewPlayer()">Guardar</button>
         <button class="btn btn-reset" style="flex:1" onclick="closeForm()">Cancelar</button>
@@ -153,7 +155,7 @@ function saveNewPlayer() {
   const name = document.getElementById('name').value.trim();
   const pts = parseInt(document.getElementById('pts').value);
   if(!name || isNaN(pts)) return alert("Faltan datos");
-  db.push({ id: crypto.randomUUID(), name, pos: [document.getElementById('p1').value, document.getElementById('p2').value, document.getElementById('p3').value], points: pts });
+  db.push({ id: crypto.randomUUID(), name, pos: [document.getElementById('p1').value, document.getElementById('p2').value, document.getElementById('p3').value], points: pts, kid: document.getElementById('isKid').checked });
   localStorage.setItem('players', JSON.stringify(db));
   renderPlayers();
   closeForm();
@@ -165,7 +167,7 @@ function renderPlayers() {
   db.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
     const div = document.createElement('div');
     div.className = 'list-item';
-    div.innerHTML = `<input type="checkbox" ${selectedIds.has(p.id)?'checked':''} onchange="toggleSelect('${p.id}', this.checked)"> <span>${p.name}</span>`;
+    div.innerHTML = `<input type="checkbox" ${selectedIds.has(p.id)?'checked':''} onchange="toggleSelect('${p.id}', this.checked)"> <span>${p.name}${p.kid ? ' 👦' : ''}</span>`;
     container.appendChild(div);
   });
   updateUI();
@@ -182,49 +184,107 @@ function updateUI() {
   document.getElementById('resetBtn').classList.toggle('hidden', teamWhite.length === 0 && teamPetos.length === 0 && selectedIds.size === 0);
 }
 
-// LÓGICA CON COMPROBACIÓN NUMÉRICA "SIMPLE PERO EFECTIVA"
+// ─── NUEVA LÓGICA DE REPARTO ───────────────────────────────────────────────
+// Pesos del score (orden de prioridad descendente):
+const W_KID_IMBALANCE = 200; // desequilibrio de niños (máxima prioridad)
+const W_POS_PRIMARY   =  23; // posición primaria (pos[0]) no cubierta (+15% sobre secundaria)
+const W_POS_SECONDARY =  20; // posición secundaria/terciaria no cubierta
+const W_POS_COUNT     =  30; // diferencia de cantidad de jugadores por posición primaria
+const W_POINTS        =   1; // diferencia de puntos (tiebreaker fino)
+
+function scoreTeams(tW, tP) {
+  let score = 0;
+
+  // 1. Niños: penalización máxima por cada niño de diferencia
+  const kidsW = tW.filter(p => p.kid).length;
+  const kidsP = tP.filter(p => p.kid).length;
+  score += Math.abs(kidsW - kidsP) * W_KID_IMBALANCE;
+
+  // 2. Posiciones: penaliza ausencia Y desequilibrio de cantidad por rol
+  roles.forEach(role => {
+    const primaryW = tW.some(p => p.pos[0] === role);
+    const primaryP = tP.some(p => p.pos[0] === role);
+    const anyW     = tW.some(p => p.pos.includes(role));
+    const anyP     = tP.some(p => p.pos.includes(role));
+    if (!primaryW) score += W_POS_PRIMARY;
+    if (!primaryP) score += W_POS_PRIMARY;
+    if (!anyW)     score += W_POS_SECONDARY;
+    if (!anyP)     score += W_POS_SECONDARY;
+    // Penaliza diferencia de cantidad de posicion primaria entre equipos
+    const countW = tW.filter(p => p.pos[0] === role).length;
+    const countP = tP.filter(p => p.pos[0] === role).length;
+    score += Math.abs(countW - countP) * W_POS_COUNT;
+  });
+
+  // 3. Diferencia de puntos totales
+  const ptsW = tW.reduce((s, p) => s + p.points, 0);
+  const ptsP = tP.reduce((s, p) => s + p.points, 0);
+  score += Math.abs(ptsW - ptsP) * W_POINTS;
+
+  return score;
+}
+
 function splitTeams() {
   const players = db.filter(p => selectedIds.has(p.id));
-  const isEven = players.length % 2 === 0;
+  const n = players.length;
+  const targetW = Math.ceil(n / 2);
+  const targetP = Math.floor(n / 2);
+
+  // Fase 1: pre-repartir niños en pares para garantizar equilibrio matematico
+  const kids   = players.filter(p => p.kid);
+  const adults = players.filter(p => !p.kid);
+
+  function buildInitialSplit() {
+    const sk = [...kids].sort(() => Math.random() - 0.5);
+    const sa = [...adults].sort(() => Math.random() - 0.5);
+    const tW = [], tP = [];
+    // Niños repartidos alternadamente: garantia de diferencia maxima de 1
+    sk.forEach((k, i) => (i % 2 === 0 ? tW : tP).push(k));
+    // Adultos rellenan hasta alcanzar los tamanos objetivo
+    sa.forEach(a => (tW.length < targetW ? tW : tP).push(a));
+    return { tW, tP };
+  }
+
+  // Fase 2: mejora por swaps — intercambia jugadores entre equipos si mejora el score
+  function swapImprove(tW, tP) {
+    const iW = Math.floor(Math.random() * tW.length);
+    const iP = Math.floor(Math.random() * tP.length);
+    const newW = [...tW]; const newP = [...tP];
+    [newW[iW], newP[iP]] = [newP[iP], newW[iW]];
+    return { tW: newW, tP: newP };
+  }
+
   let bestScore = Infinity;
   let bestSplit = null;
+  const RESTARTS   = 30;   // arranques aleatorios distintos
+  const ITERATIONS = 300;  // intentos de mejora por arranque
 
-  for(let i=0; i<3000; i++) {
-    let tW = [], tP = [], pW = 0, pP = 0;
-    const shuffled = [...players].sort(() => Math.random() - 0.5);
-    
-    shuffled.forEach(p => {
-      if (pW <= pP) { tW.push(p); pW += p.points; } else { tP.push(p); pP += p.points; }
-    });
+  for (let r = 0; r < RESTARTS; r++) {
+    let { tW, tP } = buildInitialSplit();
+    let currentScore = scoreTeams(tW, tP);
 
-    if (isEven && tW.length !== tP.length) continue;
-    if (!isEven && Math.abs(tW.length - tP.length) !== 1) continue;
+    for (let i = 0; i < ITERATIONS; i++) {
+      const { tW: nW, tP: nP } = swapImprove(tW, tP);
+      if (nW.length !== targetW || nP.length !== targetP) continue;
+      const ns = scoreTeams(nW, nP);
+      if (ns < currentScore) {
+        tW = nW; tP = nP; currentScore = ns;
+      }
+    }
 
-    const diff = Math.abs(pW - pP);
-    let penalty = calculatePenalty(tW, tP);
-    
-    if (diff + penalty < bestScore) {
-      bestScore = diff + penalty;
+    if (currentScore < bestScore) {
+      bestScore = currentScore;
       bestSplit = { w: tW, p: tP };
     }
   }
 
   if (bestSplit) {
-    teamWhite = bestSplit.w; teamPetos = bestSplit.p;
+    teamWhite = bestSplit.w;
+    teamPetos = bestSplit.p;
     showField();
   } else {
-    alert("Prueba de nuevo para encontrar el equilibrio perfecto.");
+    alert("No se pudo encontrar un reparto valido.");
   }
-}
-
-function calculatePenalty(tW, tP) {
-  let penalty = 0;
-  roles.forEach(role => {
-    const hasW = tW.some(p => p.pos.includes(role));
-    const hasP = tP.some(p => p.pos.includes(role));
-    if (!hasW) penalty += 50; if (!hasP) penalty += 50;
-  });
-  return penalty;
 }
 
 function showField() {
@@ -259,7 +319,7 @@ function renderDbList() {
     container.innerHTML += `
       <div class="db-item">
         <div class="db-row">
-          <span>${p.name} (${p.points} pts)</span>
+          <span>${p.name} (${p.points} pts)${p.kid ? ' 👦' : ''}</span>
           <div>
             <button class="btn" style="background:#ffa000; padding:5px 10px" onclick="showEditSubmenu(${i})">✏️</button>
             <button class="btn btn-reset" style="padding:5px 10px" onclick="deletePlayer(${i})">🗑️</button>
@@ -269,6 +329,9 @@ function renderDbList() {
           <input type="text" id="edit-name-${i}" value="${p.name}" style="width:90%; padding:8px;"><br><br>
           <div style="display:flex; gap:5px;"><select id="ep1-${i}"></select><select id="ep2-${i}"></select><select id="ep3-${i}"></select></div><br>
           <input type="number" id="edit-pts-${i}" value="${p.points}" style="width:90%; padding:8px;"><br><br>
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.9em; cursor:pointer; margin-bottom:10px;">
+            <input type="checkbox" id="edit-kid-${i}" ${p.kid ? 'checked' : ''} style="transform:scale(1.3);"> 👦 Niño
+          </label>
           <button class="btn" style="background:#4caf50; color:white;" onclick="saveEdit(${i})">OK</button>
         </div>
       </div>`;
@@ -290,6 +353,7 @@ function saveEdit(i) {
   db[i].name = document.getElementById(`edit-name-${i}`).value;
   db[i].points = parseInt(document.getElementById(`edit-pts-${i}`).value);
   db[i].pos = [document.getElementById(`ep1-${i}`).value, document.getElementById(`ep2-${i}`).value, document.getElementById(`ep3-${i}`).value];
+  db[i].kid = document.getElementById(`edit-kid-${i}`).checked;
   localStorage.setItem('players', JSON.stringify(db));
   renderDbList();
 }
