@@ -30,9 +30,11 @@
 
     .player-badge {
       display: flex; align-items: center; background: rgba(255,255,255,0.95);
-      padding: 4px 8px; border-radius: 4px; width: 160px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 5px solid #1976d2;
+      padding: 4px 8px; border-radius: 4px; width: 160px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     .pos-tag { font-size: 0.65em; font-weight: bold; background: #333; color: white; padding: 2px 4px; border-radius: 3px; margin-right: 8px; min-width: 25px; text-align: center; }
+    .gk-icon { font-size: 0.85em; margin-left: 6px; }
+    .player-badge.goalkeeper { margin-top: 10px; margin-bottom: 10px; border-top: 1px solid rgba(0,0,0,0.08); }
     .player-name { font-size: 0.9em; font-weight: bold; color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* Banner equipos activos */
@@ -296,7 +298,14 @@ function showField() {
   const draw = (team, id, label) => {
     const el = document.getElementById(id);
     el.innerHTML = `<div class="team-label">${label}</div>`;
-    team.forEach(p => el.innerHTML += `<div class="player-badge"><span class="pos-tag">${posAbbr[p.pos[0]]||'---'}</span><span class="player-name">${p.name}</span></div>`);
+    const posColor = { 'Portero': '#546e7a', 'Defensa': '#1976d2', 'Central': '#f9a825', 'Delantero': '#c62828' };
+    team.forEach(p => {
+      const color = posColor[p.pos[0]] || '#1976d2';
+      const isGK = p.pos[0] === 'Portero';
+      const gkIcon = isGK ? '<span class="gk-icon">🧤</span>' : '';
+      const extraClass = isGK ? ' goalkeeper' : '';
+      el.innerHTML += `<div class="player-badge${extraClass}" style="border-left: 5px solid ${color}"><span class="pos-tag">${posAbbr[p.pos[0]]||'---'}</span><span class="player-name">${p.name}</span>${gkIcon}</div>`;
+    });
   };
   draw(teamWhite, 'teamWhiteField', 'BLANCO');
   draw(teamPetos, 'teamPetosField', 'PETOS');
