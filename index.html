@@ -282,7 +282,9 @@ function renderPlayers() {
   db.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
     const div = document.createElement('div');
     div.className = 'list-item';
-    div.innerHTML = `<input type="checkbox" ${selectedIds.has(p.id)?'checked':''} onchange="toggleSelect('${p.id}', this.checked)"> <span>${p.name}${p.kid ? ' 👦' : ''}</span>`;
+    div.style.cursor = 'pointer';
+    div.innerHTML = `<input type="checkbox" ${selectedIds.has(p.id)?'checked':''} style="pointer-events:none;"> <span>${p.name}${p.kid ? ' 👦' : ''}</span>`;
+    div.onclick = () => { const chk = div.querySelector('input'); chk.checked = !chk.checked; toggleSelect(p.id, chk.checked); };
     container.appendChild(div);
   });
   updateUI();
