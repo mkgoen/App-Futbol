@@ -57,12 +57,37 @@
     /* DB Editor */
     .db-item { border-bottom: 1px solid #eee; padding: 12px 0; }
     .db-row { display: flex; justify-content: space-between; align-items: center; }
+
+    /* Historial */
+    .hist-entry { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #fafafa; }
+    .hist-date { font-size: 0.78em; color: #888; margin-bottom: 8px; }
+    .hist-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .hist-team h5 { margin: 0 0 4px 0; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; color: #555; }
+    .hist-player { font-size: 0.78em; padding: 2px 0; border-bottom: 1px solid #eee; }
+    .hist-empty { color: #aaa; font-size: 0.85em; text-align: center; padding: 20px 0; }
+
+    /* Barra de navegación de pestañas */
+    .tab-bar { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: none; font-weight: bold; font-size: 0.85em; cursor: pointer; color: #888; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: 0.2s; }
+    .tab-btn.active { color: #1976d2; border-bottom-color: #1976d2; }
+
+    /* Botones archivo */
+    .file-btn { display: flex; align-items: center; gap: 6px; padding: 9px 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 0.82em; cursor: pointer; }
+    .file-btn-save { background: #1976d2; color: white; }
+    .file-btn-load { background: #546e7a; color: white; }
   </style>
 </head>
 <body>
 
 <div id="main-screen">
-  <h1>Formador de equipos</h1>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <h1 style="margin:0;">Formador de equipos</h1>
+    <div style="display:flex; gap:6px;">
+      <button class="file-btn file-btn-save" onclick="saveFile()">💾 Guardar</button>
+      <button class="file-btn file-btn-load" onclick="document.getElementById('fileInput').click()">📂 Abrir</button>
+      <input type="file" id="fileInput" accept=".json" class="hidden" onchange="loadFile(event)">
+    </div>
+  </div>
   <div class="card">
     <div class="header-row">
       <button id="openFormBtn" class="btn btn-add" onclick="openForm()">+</button>
@@ -113,6 +138,7 @@
     <button class="btn btn-back" onclick="goBackToSelection()">⬅ Volver</button>
     <div style="display:flex; gap:10px; margin-top:10px;">
         <button class="btn btn-main" style="flex:1; background:#ffa000" onclick="openManualEditor()">Mover Manual</button>
+        <button class="btn btn-main" style="flex:1; background:#7b1fa2" onclick="openHistory()">📋 Historial</button>
         <button class="btn btn-reset" style="flex:1" onclick="resetTeams()">Borrar Todo</button>
     </div>
   </div>
@@ -127,6 +153,14 @@
   <button class="btn btn-main" style="margin-top:15px;" onclick="saveManualEdit()">Aplicar</button>
 </div>
 
+<div id="history-screen" class="hidden card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>Historial</h2>
+    <button class="btn btn-back" style="width:auto; margin:0" onclick="closeHistory()">Cerrar</button>
+  </div>
+  <div id="history-list"></div>
+</div>
+
 <div id="db-editor" class="hidden card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h2>Base de Datos</h2>
@@ -137,8 +171,87 @@
 
 <script>
 let db = JSON.parse(localStorage.getItem('players') || '[]');
+let history = JSON.parse(localStorage.getItem('teamHistory') || '[]');
 let selectedIds = new Set();
 let teamWhite = [], teamPetos = [];
+
+// ── HISTORIAL ──────────────────────────────────────────────────────────────
+function saveToHistory(tW, tP) {
+  const entry = {
+    date: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }),
+    white: tW.map(p => ({ name: p.name, pos: p.pos[0] || '' })),
+    petos: tP.map(p => ({ name: p.name, pos: p.pos[0] || '' }))
+  };
+  history.unshift(entry);
+  if (history.length > 5) history = history.slice(0, 5);
+  localStorage.setItem('teamHistory', JSON.stringify(history));
+}
+
+function openHistory() {
+  document.getElementById('field-screen').classList.add('hidden');
+  document.getElementById('history-screen').classList.remove('hidden');
+  renderHistory();
+}
+
+function closeHistory() {
+  document.getElementById('history-screen').classList.add('hidden');
+  document.getElementById('field-screen').classList.remove('hidden');
+}
+
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  if (history.length === 0) {
+    container.innerHTML = '<div class="hist-empty">Aún no hay partidos registrados.</div>';
+    return;
+  }
+  container.innerHTML = history.map((entry, i) => `
+    <div class="hist-entry">
+      <div class="hist-date">📅 ${entry.date}</div>
+      <div class="hist-teams">
+        <div class="hist-team">
+          <h5>⚪ Blanco</h5>
+          ${entry.white.map(p => `<div class="hist-player">${posAbbr[p.pos] || '---'} ${p.name}</div>`).join('')}
+        </div>
+        <div class="hist-team">
+          <h5>🟡 Petos</h5>
+          ${entry.petos.map(p => `<div class="hist-player">${posAbbr[p.pos] || '---'} ${p.name}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── GUARDAR / CARGAR ARCHIVO ───────────────────────────────────────────────
+function saveFile() {
+  const data = { db, history };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'equipos_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.db || !Array.isArray(data.db)) throw new Error('Formato inválido');
+      db = data.db;
+      history = Array.isArray(data.history) ? data.history : [];
+      localStorage.setItem('players', JSON.stringify(db));
+      localStorage.setItem('teamHistory', JSON.stringify(history));
+      renderPlayers();
+      alert('✅ Archivo cargado correctamente.');
+    } catch(err) {
+      alert('❌ Error al cargar el archivo: ' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
 const roles = ["Portero", "Defensa", "Central", "Delantero"];
 const posPriority = { "Portero": 1, "Defensa": 2, "Central": 3, "Delantero": 4, "": 5 };
 const posAbbr = { "Portero": "POR", "Defensa": "DEF", "Central": "CEN", "Delantero": "DEL", "": "---" };
@@ -283,6 +396,7 @@ function splitTeams() {
   if (bestSplit) {
     teamWhite = bestSplit.w;
     teamPetos = bestSplit.p;
+    saveToHistory(teamWhite, teamPetos);
     showField();
   } else {
     alert("No se pudo encontrar un reparto valido.");
