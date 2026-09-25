@@ -278,9 +278,22 @@ function saveToHistory(tW, tP, slot) {
   const entry = {
     date: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }),
     slot: slot || 1,
-    white: tW.map(p => ({ name: p.name, pos: p.pos[0] || '' })),
-    petos: tP.map(p => ({ name: p.name, pos: p.pos[0] || '' }))
+    white: tW.map(p => ({
+      name: p.name,
+      pos: p.pos[0] || '',
+      rendimiento: getRend(p),                 // <-- NUEVO
+      control: p.control ?? 'medio',          // <-- OPCIONAL
+      kid: !!p.kid                              // <-- OPCIONAL
+    })),
+    petos: tP.map(p => ({
+      name: p.name,
+      pos: p.pos[0] || '',
+      rendimiento: getRend(p),                // <-- NUEVO
+      control: p.control ?? 'medio',         // <-- OPCIONAL
+      kid: !!p.kid                              // <-- OPCIONAL
+    }))
   };
+
   history.unshift(entry);
   if (history.length > 5) history = history.slice(0, 5);
   localStorage.setItem('teamHistory', JSON.stringify(history));
@@ -299,15 +312,25 @@ function closeHistory() {
 
 function loadFromHistory(i) {
   const entry = history[i];
-  // Reconstruir equipos desde el historial (solo nombre y pos, sin referencia a db)
-  const makePlayer = p => ({ id: 'hist_'+p.name, name: p.name, pos: [p.pos, '', ''], points: 5, rendimiento: 5, control: 'medio', kid: false });
+
+  const makePlayer = p => ({
+    id: 'hist_' + p.name + '_' + (p.pos || ''),
+    name: p.name,
+    pos: [p.pos || '', '', ''],
+    rendimiento: p.rendimiento ?? 5,   // <-- usa historial
+    points: p.rendimiento ?? 5,        // <-- usa historial
+    control: p.control ?? 'medio',     // <-- opcional
+    kid: !!p.kid                         // <-- opcional
+  });
+
   if ((entry.slot || 1) === 1) {
-    teamWhite  = entry.white.map(makePlayer);
-    teamPetos  = entry.petos.map(makePlayer);
+    teamWhite = (entry.white || []).map(makePlayer);
+    teamPetos = (entry.petos || []).map(makePlayer);
   } else {
-    teamWhite2 = entry.white.map(makePlayer);
-    teamPetos2 = entry.petos.map(makePlayer);
+    teamWhite2 = (entry.white || []).map(makePlayer);
+    teamPetos2 = (entry.petos || []).map(makePlayer);
   }
+
   closeHistory();
   showField();
 }
