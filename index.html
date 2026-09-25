@@ -8,7 +8,7 @@
     :root { --grass-light: #2e7d32; --grass-dark: #276b2b; --line-color: rgba(255, 255, 255, 0.6); }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 10px; background: #eceff1; }
     .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    
+
     .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     #counter { font-weight: bold; background: #1976d2; color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85em; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
@@ -18,7 +18,7 @@
     .list-item input { margin-right: 10px; transform: scale(1.2); }
 
     /* CAMPO PROFESIONAL */
-    .field { 
+    .field {
       background: repeating-linear-gradient(var(--grass-light), var(--grass-light) 40px, var(--grass-dark) 40px, var(--grass-dark) 80px);
       border: 4px solid white; min-height: 650px; display: flex; flex-direction: column; border-radius: 12px; position: relative; overflow: hidden;
     }
@@ -29,8 +29,8 @@
     .team-label { color: white; font-size: 26px; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); margin-bottom: 10px; }
 
     .player-badge {
-      display: flex; align-items: center; background: rgba(255,255,255,0.95);
-      padding: 4px 8px; border-radius: 4px; width: 160px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      display: flex; margin:2px; align-items: center; background: rgba(255,255,255,0.95);
+      padding: 4px 8px; border-radius: 4px; width: 170px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     .pos-tag { font-size: 0.65em; font-weight: bold; background: #333; color: white; padding: 2px 4px; border-radius: 3px; margin-right: 8px; min-width: 25px; text-align: center; }
     .gk-icon { font-size: 0.85em; margin-left: 6px; }
@@ -51,9 +51,9 @@
     .btn { padding: 12px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.3s; }
     .btn-add { background: #4caf50; color: white; font-size: 20px; padding: 8px 16px; }
     .btn-main { background: #1976d2; color: white; width: 100%; }
-    .btn-back { background: #546e7a; color: white; width: 100%; margin-top: 10px; }
+    .btn-back { background: #546e7a; color: white; width: 50%; margin-top: 10px; }
     .btn-reset { background: #d32f2f; color: white; }
-    
+
     /* DB Editor */
     .db-item { border-bottom: 1px solid #eee; padding: 12px 0; }
     .db-row { display: flex; justify-content: space-between; align-items: center; }
@@ -96,6 +96,14 @@
     /* Campo: etiqueta hora */
     .field-slot-label { color: white; font-size: 0.75em; font-weight: bold; letter-spacing: 1px;
       background: rgba(0,0,0,0.35); padding: 3px 10px; border-radius: 10px; margin-bottom: 4px; }
+
+    /* =======================
+       ESTADÍSTICAS (toggle)
+       ======================= */
+    .stats-hidden .stats-general,
+    .stats-hidden .player-rend {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -121,7 +129,7 @@
       <span>⚽ Equipos formados</span>
       <button onclick="showField()">Ver equipos →</button>
     </div>
-    
+
     <div id="add-form" class="hidden">
       <h3>Nuevo Jugador</h3>
       <input type="text" id="name" placeholder="Nombre completo" style="width:95%; padding:10px; border-radius:6px; border:1px solid #ccc;"><br><br>
@@ -130,7 +138,20 @@
         <select id="p2" style="flex:1; padding:8px;"></select>
         <select id="p3" style="flex:1; padding:8px;"></select>
       </div><br>
-      <input type="number" id="pts" placeholder="Puntos (1-9)" min="1" max="9" style="width:95%; padding:10px; border-radius:6px; border:1px solid #ccc;"><br><br>
+      <div style="display:flex; gap:10px; margin-bottom:12px;">
+        <div style="flex:1;">
+          <label style="font-size:0.8em; font-weight:bold; color:#444; display:block; margin-bottom:4px;">Rendimiento (1-9)</label>
+          <input type="number" id="rendimiento" placeholder="1-9" min="1" max="9" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:0.8em; font-weight:bold; color:#444; display:block; margin-bottom:4px;">Control de balón</label>
+          <select id="control" style="width:100%; padding:9px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; background:white;">
+            <option value="bajo">Bajo</option>
+            <option value="medio" selected>Medio</option>
+            <option value="alto">Alto</option>
+          </select>
+        </div>
+      </div>
       <label style="display:flex; align-items:center; gap:8px; font-size:0.9em; cursor:pointer;">
         <input type="checkbox" id="isKid" style="transform:scale(1.3);"> 👦 Niño
       </label>
@@ -162,11 +183,22 @@
       <div class="half" id="teamWhiteField2"></div>
       <div class="half" id="teamPetosField2"></div>
     </div>
-    <button class="btn btn-back" onclick="goBackToSelection()">⬅ Volver</button>
+
+    <div style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+      <button class="btn btn-back" style="flex:0 0 auto; margin-top:0;" onclick="goBackToSelection()">⬅ Volver</button>
+
+      <button id="toggleStatsBtn"
+              class="btn"
+              style="flex:1; background:#455a64; color:#fff; padding:12px; border-radius:6px;"
+              onclick="toggleStats()">
+        mostrar estadísticas
+      </button>
+    </div>
+
     <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="btn btn-main" style="flex:1; background:#ffa000" onclick="openManualEditor()">Mover Manual</button>
-        <button class="btn btn-main" style="flex:1; background:#7b1fa2" onclick="openHistory()">📋 Historial</button>
-        <button class="btn btn-reset" style="flex:1" onclick="resetTeams()">Borrar Todo</button>
+      <button class="btn btn-main" style="flex:1; background:#ffa000" onclick="openManualEditor()">Mover Manual</button>
+      <button class="btn btn-main" style="flex:1; background:#7b1fa2" onclick="openHistory()">📋 Historial</button>
+      <button class="btn btn-reset" style="flex:1" onclick="resetTeams()">Borrar Todo</button>
     </div>
   </div>
 </div>
@@ -208,13 +240,38 @@
 
 <script>
 let db = JSON.parse(localStorage.getItem('players') || '[]');
+// Migración automática para compatibilidad con datos existentes
+db.forEach(p => {
+  if (p.rendimiento === undefined) p.rendimiento = p.points || 5;
+  if (p.control === undefined) p.control = 'medio';
+  p.points = p.rendimiento;
+});
 let history = JSON.parse(localStorage.getItem('teamHistory') || '[]');
 // slotMap: id → 1 (primera hora) | 2 (segunda hora) | 3 (ambas horas)
 let slotMap = {};
 let teamWhite = [], teamPetos = [];
 let teamWhite2 = [], teamPetos2 = [];
+
 // selectedIds como computed de slotMap para compatibilidad
-const selectedIds = { has: id => id in slotMap, add: ()=>{}, delete: ()=>{}, get size() { return Object.keys(slotMap).length; }, clear: () => { slotMap = {}; } };
+const selectedIds = {
+  has: id => id in slotMap,
+  add: ()=>{},
+  delete: ()=>{},
+  get size() { return Object.keys(slotMap).length; },
+  clear: () => { slotMap = {}; }
+};
+
+// ── ESTADÍSTICAS (campo) ─────────────────────────────────────────────────
+let showStats = false;
+
+function toggleStats() {
+  showStats = !showStats;
+  const fieldCard = document.getElementById('field-screen');
+  fieldCard.classList.toggle('stats-hidden', !showStats);
+
+  const btn = document.getElementById('toggleStatsBtn');
+  btn.textContent = showStats ? 'Ocultar estadísticas' : 'mostrar estadísticas';
+}
 
 // ── HISTORIAL ──────────────────────────────────────────────────────────────
 function saveToHistory(tW, tP, slot) {
@@ -243,7 +300,7 @@ function closeHistory() {
 function loadFromHistory(i) {
   const entry = history[i];
   // Reconstruir equipos desde el historial (solo nombre y pos, sin referencia a db)
-  const makePlayer = p => ({ id: 'hist_'+p.name, name: p.name, pos: [p.pos, '', ''], points: 0, kid: false });
+  const makePlayer = p => ({ id: 'hist_'+p.name, name: p.name, pos: [p.pos, '', ''], points: 5, rendimiento: 5, control: 'medio', kid: false });
   if ((entry.slot || 1) === 1) {
     teamWhite  = entry.white.map(makePlayer);
     teamPetos  = entry.petos.map(makePlayer);
@@ -301,6 +358,11 @@ function loadFile(event) {
       const data = JSON.parse(e.target.result);
       if (!data.db || !Array.isArray(data.db)) throw new Error('Formato inválido');
       db = data.db;
+      db.forEach(p => {
+        if (p.rendimiento === undefined) p.rendimiento = p.points || 5;
+        if (p.control === undefined) p.control = 'medio';
+        p.points = p.rendimiento;
+      });
       history = Array.isArray(data.history) ? data.history : [];
       localStorage.setItem('players', JSON.stringify(db));
       localStorage.setItem('teamHistory', JSON.stringify(history));
@@ -313,6 +375,7 @@ function loadFile(event) {
   };
   reader.readAsText(file);
 }
+
 const roles = ["Portero", "Defensa", "Central", "Delantero"];
 const posPriority = { "Portero": 1, "Defensa": 2, "Central": 3, "Delantero": 4, "": 5 };
 const posAbbr = { "Portero": "POR", "Defensa": "DEF", "Central": "CEN", "Delantero": "DEL", "": "---" };
@@ -329,9 +392,18 @@ function closeForm() { document.getElementById('add-form').classList.add('hidden
 
 function saveNewPlayer() {
   const name = document.getElementById('name').value.trim();
-  const pts = parseInt(document.getElementById('pts').value);
-  if(!name || isNaN(pts)) return alert("Faltan datos");
-  db.push({ id: crypto.randomUUID(), name, pos: [document.getElementById('p1').value, document.getElementById('p2').value, document.getElementById('p3').value], points: pts, kid: document.getElementById('isKid').checked });
+  const rend = parseInt(document.getElementById('rendimiento').value);
+  const ctrl = document.getElementById('control').value;
+  if (!name || isNaN(rend) || rend < 1 || rend > 9) return alert("Por favor, introduce un nombre y un rendimiento válido del 1 al 9");
+  db.push({
+    id: crypto.randomUUID(),
+    name,
+    pos: [document.getElementById('p1').value, document.getElementById('p2').value, document.getElementById('p3').value],
+    rendimiento: rend,
+    control: ctrl,
+    points: rend,
+    kid: document.getElementById('isKid').checked
+  });
   localStorage.setItem('players', JSON.stringify(db));
   renderPlayers();
   closeForm();
@@ -343,9 +415,11 @@ function renderPlayers() {
   db.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
     const div = document.createElement('div');
     const slot = slotMap[p.id] || 0;
+    const rend = p.rendimiento ?? p.points ?? 5;
+    const ctrl = p.control ?? 'medio';
     div.className = 'list-item' + (slot === 1 ? ' slot1' : slot === 2 ? ' slot2' : slot === 3 ? ' slot3' : '');
     div.style.cursor = 'pointer';
-    div.title = slot === 1 ? '1ª hora' : slot === 2 ? '2ª hora' : slot === 3 ? 'Ambas horas (1ª y 2ª)' : 'Toca para seleccionar hora';
+    div.title = (slot === 1 ? '1ª hora' : slot === 2 ? '2ª hora' : slot === 3 ? 'Ambas horas (1ª y 2ª)' : 'Sin hora asignada') + ` | Rend: ${rend}, Ctrl: ${ctrl}`;
     const badgeText = slot === 3 ? '1+2' : slot > 0 ? slot : '';
     const badge = slot > 0 ? `<span class="slot-badge">${badgeText}</span>` : '<span class="slot-badge"></span>';
     div.innerHTML = `<span style="margin-right:8px;">⚽</span><span style="flex:1;">${p.name}${p.kid ? ' 👦' : ''}</span>${badge}`;
@@ -373,42 +447,121 @@ function updateUI() {
   document.getElementById('resetBtn').classList.toggle('hidden', !hasFormedTeams && Object.keys(slotMap).length === 0);
 }
 
-// ─── NUEVA LÓGICA DE REPARTO ───────────────────────────────────────────────
-// Pesos del score (orden de prioridad descendente):
-const W_KID_IMBALANCE = 200; // desequilibrio de niños (máxima prioridad)
-const W_POS_PRIMARY   =  23; // posición primaria (pos[0]) no cubierta (+15% sobre secundaria)
-const W_POS_SECONDARY =  20; // posición secundaria/terciaria no cubierta
-const W_POS_COUNT     =  30; // diferencia de cantidad de jugadores por posición primaria
-const W_POINTS        =   1; // diferencia de puntos (tiebreaker fino)
+// ─── NUEVA LÓGICA DE REPARTO OPTIMIZADA ─────────────────────────────────
+const CTRL_VALUES = { 'bajo': 1, 'medio': 2, 'alto': 3 };
+function getRend(p) { return p.rendimiento ?? p.points ?? 5; }
+function getCtrl(p) { return CTRL_VALUES[p.control] ?? 2; }
 
-function scoreTeams(tW, tP) {
+function lineRendImbalance(listW, listP) {
+  if (listW.length === 0 && listP.length === 0) return 0;
+  const sumW = listW.reduce((s, p) => s + getRend(p), 0);
+  const sumP = listP.reduce((s, p) => s + getRend(p), 0);
+  if (listW.length === listP.length) {
+    return Math.abs(sumW - sumP);
+  }
+  const avgW = listW.length > 0 ? sumW / listW.length : 0;
+  const avgP = listP.length > 0 ? sumP / listP.length : 0;
+  return Math.abs(avgW - avgP) * Math.max(1, Math.min(listW.length, listP.length));
+}
+
+function scoreTeams(tW, tP, isSecondMatch) {
   let score = 0;
 
-  // 1. Niños: penalización máxima por cada niño de diferencia
+  const gkW = tW.filter(p => p.pos[0] === 'Portero').length;
+  const gkP = tP.filter(p => p.pos[0] === 'Portero').length;
+  const totalGk = gkW + gkP;
+
   const kidsW = tW.filter(p => p.kid).length;
   const kidsP = tP.filter(p => p.kid).length;
-  score += Math.abs(kidsW - kidsP) * W_KID_IMBALANCE;
+  const totalKids = kidsW + kidsP;
 
-  // 2. Posiciones: penaliza ausencia Y desequilibrio de cantidad por rol
-  roles.forEach(role => {
-    const primaryW = tW.some(p => p.pos[0] === role);
-    const primaryP = tP.some(p => p.pos[0] === role);
-    const anyW     = tW.some(p => p.pos.includes(role));
-    const anyP     = tP.some(p => p.pos.includes(role));
-    if (!primaryW) score += W_POS_PRIMARY;
-    if (!primaryP) score += W_POS_PRIMARY;
-    if (!anyW)     score += W_POS_SECONDARY;
-    if (!anyP)     score += W_POS_SECONDARY;
-    // Penaliza diferencia de cantidad de posicion primaria entre equipos
+  const rendW = tW.reduce((s, p) => s + getRend(p), 0);
+  const rendP = tP.reduce((s, p) => s + getRend(p), 0);
+
+  const ctrlW = tW.reduce((s, p) => s + getCtrl(p), 0);
+  const ctrlP = tP.reduce((s, p) => s + getCtrl(p), 0);
+
+  if (totalGk >= 2) {
+    score += Math.abs(gkW - gkP) * 1500;
+  }
+
+  const hasGkAdvantageW = (gkW > 0 && gkP === 0);
+  const hasGkAdvantageP = (gkP > 0 && gkW === 0);
+
+  if (hasGkAdvantageW || hasGkAdvantageP) {
+    const kidsAdv = hasGkAdvantageW ? kidsW : kidsP;
+    const kidsNoAdv = hasGkAdvantageW ? kidsP : kidsW;
+    const rendAdv = hasGkAdvantageW ? rendW : rendP;
+    const rendNoAdv = hasGkAdvantageW ? rendP : rendW;
+
+    if (totalKids % 2 !== 0) {
+      if (kidsAdv < kidsNoAdv) score += 900;
+      else if (kidsAdv > kidsNoAdv) score -= 60;
+    } else {
+      score += Math.abs(kidsAdv - kidsNoAdv) * 450;
+    }
+
+    const targetAdv = (kidsAdv > kidsNoAdv) ? 1.5 : 3.0;
+    const actualAdv = rendNoAdv - rendAdv;
+    score += Math.abs(actualAdv - targetAdv) * 12;
+
+    const ctrlAdv = hasGkAdvantageW ? ctrlW : ctrlP;
+    const ctrlNoAdv = hasGkAdvantageW ? ctrlP : ctrlW;
+    if (ctrlAdv > ctrlNoAdv) score += (ctrlAdv - ctrlNoAdv) * 18;
+    else score += Math.abs(ctrlAdv - ctrlNoAdv) * 10;
+
+  } else {
+    score += Math.abs(kidsW - kidsP) * 600;
+    score += Math.abs(rendW - rendP) * 12;
+    score += Math.abs(ctrlW - ctrlP) * 15;
+  }
+
+  if (isSecondMatch) {
+    const freshW = tW.filter(p => slotMap[p.id] === 2).length;
+    const freshP = tP.filter(p => slotMap[p.id] === 2).length;
+    score += Math.abs(freshW - freshP) * 250;
+  }
+
+  const defW = tW.filter(p => p.pos[0] === 'Defensa');
+  const defP = tP.filter(p => p.pos[0] === 'Defensa');
+  const cenW = tW.filter(p => p.pos[0] === 'Central');
+  const cenP = tP.filter(p => p.pos[0] === 'Central');
+  const atkW = tW.filter(p => p.pos[0] === 'Delantero');
+  const atkP = tP.filter(p => p.pos[0] === 'Delantero');
+
+  score += lineRendImbalance(defW, defP) * 18;
+  score += lineRendImbalance(atkW, atkP) * 18;
+  score += lineRendImbalance(cenW, cenP) * 10;
+
+  const atkSumW = atkW.reduce((s, p) => s + getRend(p), 0);
+  const atkSumP = atkP.reduce((s, p) => s + getRend(p), 0);
+  const defSumW = defW.reduce((s, p) => s + getRend(p), 0);
+  const defSumP = defP.reduce((s, p) => s + getRend(p), 0);
+  const crossMatchup = Math.abs((atkSumW - defSumP) - (atkSumP - defSumW));
+  score += crossMatchup * 10;
+
+  const FIELD_ROLES = ["Defensa", "Central", "Delantero"];
+  FIELD_ROLES.forEach(role => {
     const countW = tW.filter(p => p.pos[0] === role).length;
     const countP = tP.filter(p => p.pos[0] === role).length;
-    score += Math.abs(countW - countP) * W_POS_COUNT;
-  });
 
-  // 3. Diferencia de puntos totales
-  const ptsW = tW.reduce((s, p) => s + p.points, 0);
-  const ptsP = tP.reduce((s, p) => s + p.points, 0);
-  score += Math.abs(ptsW - ptsP) * W_POINTS;
+    if (countW === 0) {
+      const secW = tW.some(p => p.pos[1] === role);
+      const terW = tW.some(p => p.pos[2] === role);
+      if (!secW && !terW) score += 45;
+      else if (!secW) score += 25;
+      else score += 15;
+    }
+    if (countP === 0) {
+      const secP = tP.some(p => p.pos[1] === role);
+      const terP = tP.some(p => p.pos[2] === role);
+      if (!secP && !terP) score += 45;
+      else if (!secP) score += 25;
+      else score += 15;
+    }
+
+    score += Math.abs(countW - countP) * 18;
+  });
 
   return score;
 }
@@ -417,66 +570,73 @@ function splitTeams() {
   const slot1players = db.filter(p => slotMap[p.id] === 1 || slotMap[p.id] === 3);
   const slot2players = db.filter(p => slotMap[p.id] === 2 || slotMap[p.id] === 3);
 
-  function doSplit(players) {
+  function doSplit(players, isSecondMatch) {
     if (players.length < 2) return null;
     const n = players.length;
     const targetW = Math.ceil(n / 2);
-  const targetP = Math.floor(n / 2);
+    const targetP = Math.floor(n / 2);
 
-  // Fase 1: pre-repartir niños en pares para garantizar equilibrio matematico
-  const kids   = players.filter(p => p.kid);
-  const adults = players.filter(p => !p.kid);
+    const gks = players.filter(p => p.pos[0] === 'Portero');
+    const kids = players.filter(p => p.kid && p.pos[0] !== 'Portero');
+    const fresh = isSecondMatch ? players.filter(p => !p.kid && p.pos[0] !== 'Portero' && slotMap[p.id] === 2) : [];
+    const others = players.filter(p => !p.kid && p.pos[0] !== 'Portero' && (!isSecondMatch || slotMap[p.id] !== 2));
 
-  function buildInitialSplit() {
-    const sk = [...kids].sort(() => Math.random() - 0.5);
-    const sa = [...adults].sort(() => Math.random() - 0.5);
-    const tW = [], tP = [];
-    // Niños repartidos alternadamente: garantia de diferencia maxima de 1
-    sk.forEach((k, i) => (i % 2 === 0 ? tW : tP).push(k));
-    // Adultos rellenan hasta alcanzar los tamanos objetivo
-    sa.forEach(a => (tW.length < targetW ? tW : tP).push(a));
-    return { tW, tP };
-  }
+    function buildInitialSplit() {
+      const tW = [], tP = [];
+      const pushAlt = (arr) => {
+        [...arr].sort(() => Math.random() - 0.5).forEach((p, idx) => {
+          (idx % 2 === 0 ? tW : tP).push(p);
+        });
+      };
+      pushAlt(gks);
+      pushAlt(kids);
+      if (fresh.length > 0) pushAlt(fresh);
+      const rem = [...others].sort(() => Math.random() - 0.5);
+      rem.forEach(p => {
+        if (tW.length < targetW) tW.push(p);
+        else tP.push(p);
+      });
+      return { tW, tP };
+    }
 
-  // Fase 2: mejora por swaps — intercambia jugadores entre equipos si mejora el score
-  function swapImprove(tW, tP) {
-    const iW = Math.floor(Math.random() * tW.length);
-    const iP = Math.floor(Math.random() * tP.length);
-    const newW = [...tW]; const newP = [...tP];
-    [newW[iW], newP[iP]] = [newP[iP], newW[iW]];
-    return { tW: newW, tP: newP };
-  }
+    function swapImprove(tW, tP) {
+      const iW = Math.floor(Math.random() * tW.length);
+      const iP = Math.floor(Math.random() * tP.length);
+      const newW = [...tW]; const newP = [...tP];
+      [newW[iW], newP[iP]] = [newP[iP], newW[iW]];
+      return { tW: newW, tP: newP };
+    }
 
-  let bestScore = Infinity;
-  let bestSplit = null;
-  const RESTARTS   = 30;   // arranques aleatorios distintos
-  const ITERATIONS = 300;  // intentos de mejora por arranque
+    let bestScore = Infinity;
+    let bestSplit = null;
+    const RESTARTS   = 40;
+    const ITERATIONS = 350;
 
-  for (let r = 0; r < RESTARTS; r++) {
-    let { tW, tP } = buildInitialSplit();
-    let currentScore = scoreTeams(tW, tP);
+    for (let r = 0; r < RESTARTS; r++) {
+      let { tW, tP } = buildInitialSplit();
+      let currentScore = scoreTeams(tW, tP, isSecondMatch);
 
-    for (let i = 0; i < ITERATIONS; i++) {
-      const { tW: nW, tP: nP } = swapImprove(tW, tP);
-      if (nW.length !== targetW || nP.length !== targetP) continue;
-      const ns = scoreTeams(nW, nP);
-      if (ns < currentScore) {
-        tW = nW; tP = nP; currentScore = ns;
+      for (let i = 0; i < ITERATIONS; i++) {
+        const { tW: nW, tP: nP } = swapImprove(tW, tP);
+        if (nW.length !== targetW || nP.length !== targetP) continue;
+        const ns = scoreTeams(nW, nP, isSecondMatch);
+        if (ns < currentScore) {
+          tW = nW; tP = nP; currentScore = ns;
+        }
+      }
+
+      if (currentScore < bestScore) {
+        bestScore = currentScore;
+        bestSplit = { w: tW, p: tP };
       }
     }
 
-    if (currentScore < bestScore) {
-      bestScore = currentScore;
-      bestSplit = { w: tW, p: tP };
-    }
-  }
-
     if (bestSplit) return { w: bestSplit.w, p: bestSplit.p };
     return null;
-  } // fin doSplit
+  }
 
-  const result1 = doSplit(slot1players);
-  const result2 = doSplit(slot2players);
+  const result1 = doSplit(slot1players, false);
+  const result2 = doSplit(slot2players, true);
 
   if (!result1 && !result2) { alert("No hay jugadores suficientes en ninguna hora."); return; }
 
@@ -485,7 +645,6 @@ function splitTeams() {
   teamWhite2 = result2 ? result2.w : [];
   teamPetos2 = result2 ? result2.p : [];
 
-  // Guardar en historial: cada hora como entrada separada
   if (result1) saveToHistory(result1.w, result1.p, 1);
   if (result2) saveToHistory(result2.w, result2.p, 2);
 
@@ -497,26 +656,56 @@ function showField() {
   document.getElementById('manual-editor').classList.add('hidden');
   document.getElementById('field-screen').classList.remove('hidden');
 
+  // Por defecto: estadísticas ocultas
+  showStats = false;
+  document.getElementById('field-screen').classList.add('stats-hidden');
+  document.getElementById('toggleStatsBtn').textContent = 'mostrar estadísticas';
+
   const posColor = { 'Portero': '#546e7a', 'Defensa': '#1976d2', 'Central': '#f9a825', 'Delantero': '#c62828' };
 
   const drawHalf = (team, id, label, slotLabel) => {
     const el = document.getElementById(id);
     const slotTag = slotLabel ? `<div class="field-slot-label">${slotLabel}</div>` : '';
-    el.innerHTML = `${slotTag}<div class="team-label">${label}</div>`;
+    const totalRend = team.reduce((s, p) => s + getRend(p), 0);
+    const ctrlSum = team.reduce((s, p) => s + getCtrl(p), 0);
+    const avgCtrl = team.length ? (ctrlSum / team.length) : 2;
+    const ctrlLabel = avgCtrl >= 2.35 ? 'Alto' : avgCtrl >= 1.65 ? 'Medio' : 'Bajo';
+
+    const statsTag = `
+      <div class="stats-general"
+           style="font-size:0.75em; color:rgba(255,255,255,0.95); background:rgba(0,0,0,0.35); padding:2px 10px; border-radius:10px; margin-bottom:6px; font-weight:bold;">
+        Rend: ${totalRend} &nbsp;|&nbsp; Ctrl: ${ctrlLabel}
+      </div>
+    `;
+
+    el.innerHTML = `${slotTag}<div class="team-label">${label}</div>${statsTag}`;
+
     team.sort((a,b) => (posPriority[a.pos[0]]||5) - (posPriority[b.pos[0]]||5));
     team.forEach(p => {
       const color = posColor[p.pos[0]] || '#1976d2';
       const isGK = p.pos[0] === 'Portero';
       const gkIcon = isGK ? '<span class="gk-icon">🧤</span>' : '';
       const extraClass = isGK ? ' goalkeeper' : '';
-      el.innerHTML += `<div class="player-badge${extraClass}" style="border-left: 5px solid ${color}"><span class="pos-tag">${posAbbr[p.pos[0]]||'---'}</span><span class="player-name">${p.name}</span>${gkIcon}</div>`;
+      const rend = getRend(p);
+
+      // La estrella/valor va con clase player-rend para poder ocultarlo
+      el.innerHTML += `
+        <div class="player-badge${extraClass}" style="border-left: 5px solid ${color}">
+          <span class="pos-tag">${posAbbr[p.pos[0]]||'---'}</span>
+          <span class="player-name">${p.name}</span>
+          <span class="player-rend" style="font-size:0.72em; color:#666; margin-left:auto; margin-right:4px; font-weight:bold;">
+            ${rend}⭐
+          </span>
+          ${gkIcon}
+        </div>
+      `;
     });
   };
 
-  // Campo 1ª hora
   const has1 = teamWhite.length > 0 || teamPetos.length > 0;
   const has2 = teamWhite2.length > 0 || teamPetos2.length > 0;
   const field1 = document.getElementById('mainField');
+
   if (has1) {
     field1.classList.remove('hidden');
     const slotLabel1 = has2 ? '1ª HORA' : '';
@@ -526,7 +715,6 @@ function showField() {
     field1.classList.add('hidden');
   }
 
-  // Campo 2ª hora
   const field2 = document.getElementById('mainField2');
   if (has2) {
     field2.classList.remove('hidden');
@@ -541,7 +729,7 @@ function showField() {
 function goBackToSelection() {
   document.getElementById('field-screen').classList.add('hidden');
   document.getElementById('main-screen').classList.remove('hidden');
-  updateUI(); // refresca el banner
+  updateUI();
 }
 
 function openDbEditor() { document.getElementById('main-screen').classList.add('hidden'); document.getElementById('db-editor').classList.remove('hidden'); renderDbList(); }
@@ -551,10 +739,13 @@ function renderDbList() {
   const container = document.getElementById('db-list');
   container.innerHTML = '';
   db.forEach((p, i) => {
+    const rend = p.rendimiento ?? p.points ?? 5;
+    const ctrl = p.control ?? 'medio';
+    const ctrlLabel = ctrl.charAt(0).toUpperCase() + ctrl.slice(1);
     container.innerHTML += `
       <div class="db-item">
         <div class="db-row">
-          <span>${p.name} (${p.points} pts)${p.kid ? ' 👦' : ''}</span>
+          <span>${p.name} <small style="color:#666;">(Rend: <b>${rend}</b> | Ctrl: <b>${ctrlLabel}</b>)</small>${p.kid ? ' 👦' : ''}</span>
           <div>
             <button class="btn" style="background:#ffa000; padding:5px 10px" onclick="showEditSubmenu(${i})">✏️</button>
             <button class="btn btn-reset" style="padding:5px 10px" onclick="deletePlayer(${i})">🗑️</button>
@@ -563,7 +754,20 @@ function renderDbList() {
         <div id="edit-area-${i}" class="hidden" style="background:#f9f9f9; padding:10px; margin-top:10px; border-radius:8px;">
           <input type="text" id="edit-name-${i}" value="${p.name}" style="width:90%; padding:8px;"><br><br>
           <div style="display:flex; gap:5px;"><select id="ep1-${i}"></select><select id="ep2-${i}"></select><select id="ep3-${i}"></select></div><br>
-          <input type="number" id="edit-pts-${i}" value="${p.points}" style="width:90%; padding:8px;"><br><br>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <div style="flex:1;">
+              <label style="font-size:0.75em; font-weight:bold; color:#555;">Rendimiento (1-9)</label>
+              <input type="number" id="edit-rend-${i}" value="${rend}" min="1" max="9" style="width:100%; padding:8px; box-sizing:border-box;">
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:0.75em; font-weight:bold; color:#555;">Control</label>
+              <select id="edit-ctrl-${i}" style="width:100%; padding:8px; box-sizing:border-box; background:white;">
+                <option value="bajo" ${ctrl === 'bajo' ? 'selected' : ''}>Bajo</option>
+                <option value="medio" ${ctrl === 'medio' ? 'selected' : ''}>Medio</option>
+                <option value="alto" ${ctrl === 'alto' ? 'selected' : ''}>Alto</option>
+              </select>
+            </div>
+          </div>
           <label style="display:flex; align-items:center; gap:8px; font-size:0.9em; cursor:pointer; margin-bottom:10px;">
             <input type="checkbox" id="edit-kid-${i}" ${p.kid ? 'checked' : ''} style="transform:scale(1.3);"> 👦 Niño
           </label>
@@ -585,8 +789,12 @@ function showEditSubmenu(i) {
 }
 
 function saveEdit(i) {
-  db[i].name = document.getElementById(`edit-name-${i}`).value;
-  db[i].points = parseInt(document.getElementById(`edit-pts-${i}`).value);
+  const rend = parseInt(document.getElementById(`edit-rend-${i}`).value);
+  if (isNaN(rend) || rend < 1 || rend > 9) return alert("El rendimiento debe ser un número del 1 al 9");
+  db[i].name = document.getElementById(`edit-name-${i}`).value.trim();
+  db[i].rendimiento = rend;
+  db[i].control = document.getElementById(`edit-ctrl-${i}`).value;
+  db[i].points = rend;
   db[i].pos = [document.getElementById(`ep1-${i}`).value, document.getElementById(`ep2-${i}`).value, document.getElementById(`ep3-${i}`).value];
   db[i].kid = document.getElementById(`edit-kid-${i}`).checked;
   localStorage.setItem('players', JSON.stringify(db));
